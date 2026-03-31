@@ -5,7 +5,7 @@ import { Config } from "../config/config"
 import { mapValues, mergeDeep, omit, pickBy, sortBy } from "remeda"
 import { NoSuchModelError, type Provider as SDK } from "ai"
 import { Log } from "../util/log"
-import { BunProc } from "../bun"
+import { Npm } from "../npm"
 import { Hash } from "../util/hash"
 import { Plugin } from "../plugin"
 import { NamedError } from "@opencode-ai/util/error"
@@ -1362,13 +1362,12 @@ export namespace Provider {
             return loaded as SDK
           }
 
-          let installedPath: string
-          if (!model.api.npm.startsWith("file://")) {
-            installedPath = await BunProc.install(model.api.npm, "latest")
-          } else {
-            log.info("loading local provider", { pkg: model.api.npm })
-            installedPath = model.api.npm
-          }
+          const installedPath = !model.api.npm.startsWith("file://")
+            ? await Npm.add(model.api.npm)
+            : (() => {
+                log.info("loading local provider", { pkg: model.api.npm })
+                return model.api.npm
+              })()
 
           const mod = await import(installedPath)
 
